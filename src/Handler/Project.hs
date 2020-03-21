@@ -5,16 +5,14 @@ module Handler.Project where
 import Import hiding (putStrLn, (.))
 import Data.UUID.V4
 import Data.UUID
-import Data.Text
 import Control.Monad.Trans.Maybe
-import Model
 
 postNewProjectR :: Handler Value
 postNewProjectR = do
     project <- (requireJsonBody :: Handler Project)
-    id <- liftIO nextRandom
-    insertedProject <- runDB $ insertKey (ProjectKey $ toText id) project
-    sendStatusJSON created201  id
+    newId <- liftIO nextRandom
+    runDB $ insertKey (ProjectKey $ toText newId) project
+    sendStatusJSON created201  newId
 
 getProjectsR :: Handler Value
 getProjectsR = do
@@ -30,7 +28,7 @@ getProjectR pId = do
 
 deleteProjectR :: ProjectId -> Handler Value
 deleteProjectR pId = do
-    project <- runDB $ delete pId
+    runDB $ delete pId
     sendStatusJSON ok200 ()
 
 data RenameProjectPayload = RenameProjectPayload { name :: Text } deriving (Generic, Show)
@@ -47,6 +45,6 @@ patchRenameProjectR pId = do
 
 renameProject :: ProjectId -> Text -> MaybeT (YesodDB App) (Entity Project)
 renameProject pId newName = do
-        originalProject <- MaybeT $ get $ pId
+        _ <- MaybeT $ get $ pId
         updatedProject <- lift $ updateGet pId [ ProjectName =. newName ]
         return $ Entity pId updatedProject
