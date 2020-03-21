@@ -10,7 +10,7 @@ postNewProjectR = do
     project <- (requireJsonBody :: Handler Project)
     id <- liftIO nextRandom
     insertedProject <- runDB $ insertKey (ProjectKey $ toText id) project
-    returnJson id
+    sendStatusJSON created201  id
 
 getProjectsR :: Handler Value
 getProjectsR = do
