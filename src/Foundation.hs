@@ -81,6 +81,9 @@ instance Yesod App where
             Just root -> root
     
     errorHandler NotFound = return $ toTypedContent ("The resource you were looking for was not found." :: String)
+    errorHandler (InternalError reason) = return $ toTypedContent reason
+    errorHandler (InvalidArgs names) = return $ toTypedContent $ "You provided invalid arguments: " <> (intercalate ", " names)
+    errorHandler (PermissionDenied reason) = return $ toTypedContent $ "You don't have permission to do this. " <> reason
     errorHandler other = defaultErrorHandler other
 
     -- Store session data on the client in encrypted cookies,
