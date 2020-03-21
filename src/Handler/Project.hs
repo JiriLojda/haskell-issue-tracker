@@ -1,11 +1,11 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Handler.Project where
 
-import Import hiding (putStrLn, (.))
 import Data.UUID.V4
 import Data.UUID
-import Control.Monad.Trans.Maybe
+
+import Import hiding (putStrLn, (.))
+import Services.Project
+import RequestModels.Project
 
 postNewProjectR :: Handler Value
 postNewProjectR = do
@@ -32,10 +32,6 @@ deleteProjectR pId = do
     runDB $ delete pId
     sendStatusJSON ok200 ()
 
-data RenameProjectPayload = RenameProjectPayload { name :: Text } deriving (Generic, Show)
-
-instance FromJSON RenameProjectPayload where
-
 patchRenameProjectR :: ProjectId -> Handler Value
 patchRenameProjectR pId = do
     payload <- (requireJsonBody :: Handler RenameProjectPayload)
@@ -43,21 +39,6 @@ patchRenameProjectR pId = do
     case updatedProject of
         Just x -> returnJson x
         Nothing -> notFound
-
-renameProject :: ProjectId -> Text -> Handler (Maybe (Entity Project))
-renameProject pId newName = runDB $ runMaybeT $ updateProject pId [ ProjectName =. newName ]
-
-archiveProject :: ProjectId -> Handler (Maybe (Entity Project))
-archiveProject pId = runDB $ runMaybeT $ updateProject pId [ ProjectIsArchived =. True ]
-
-unarchiveProject :: ProjectId -> Handler (Maybe (Entity Project))
-unarchiveProject pId = runDB $ runMaybeT $ updateProject pId [ ProjectIsArchived =. False ]
-
-updateProject :: ProjectId -> [Update Project] -> MaybeT (YesodDB App) (Entity Project)
-updateProject pId mods = do
-    _ <- MaybeT $ get $ pId
-    updatedProject <- lift $ updateGet pId mods
-    return $ Entity pId updatedProject
 
 patchArchiveProjectR :: ProjectId -> Handler Value
 patchArchiveProjectR pId = do
