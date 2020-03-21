@@ -16,5 +16,8 @@
 -- my routes
 
 /api/project NewProjectR POST
-/api/project/#ProjectId ProjectR GET
+/api/project/#ProjectId ProjectR GET DELETE
+/api/project/#ProjectId/rename RenameProjectR PATCH
+-- /api/project/#ProjectId/archive ArchiveProjectR PATCH
+-- /api/project/#ProjectId/unarchive UnarchiveProjectR PATCH
 /api/projects ProjectsR GET
