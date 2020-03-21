@@ -11,8 +11,9 @@ postNewProjectR :: Handler Value
 postNewProjectR = do
     project <- (requireJsonBody :: Handler Project)
     newId <- liftIO nextRandom
-    runDB $ insertKey (ProjectKey $ toText newId) project
-    sendStatusJSON created201  newId
+    let pId = ProjectKey $ toText newId
+    runDB $ insertKey pId project
+    sendStatusJSON created201 $ Entity pId project
 
 getProjectsR :: Handler Value
 getProjectsR = do
