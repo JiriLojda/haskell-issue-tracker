@@ -1,4 +1,9 @@
-module Services.Project (renameProject, unarchiveProject, archiveProject) where
+module Services.Project 
+(renameProject
+, unarchiveProject
+, archiveProject
+, findNotArchivedProject
+) where
 
 import Control.Monad.Trans.Maybe
 
@@ -18,3 +23,10 @@ updateProject pId mods = do
     _ <- MaybeT $ get $ pId
     updatedProject <- lift $ updateGet pId mods
     return $ Entity pId updatedProject
+
+findNotArchivedProject :: ProjectId -> MaybeT (YesodDB App) (Maybe (Entity Project))
+findNotArchivedProject pId = do
+    project <- MaybeT $ getEntity $ pId
+    case projectIsArchived $ entityVal project of
+        True -> return Nothing
+        False -> return $ Just project
