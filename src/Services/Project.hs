@@ -24,9 +24,9 @@ updateProject pId mods = do
     updatedProject <- lift $ updateGet pId mods
     return $ Entity pId updatedProject
 
-findNotArchivedProject :: ProjectId -> MaybeT (YesodDB App) (Maybe (Entity Project))
+findNotArchivedProject :: ProjectId -> MaybeT (YesodDB App) (Entity Project)
 findNotArchivedProject pId = do
     project <- MaybeT $ getEntity $ pId
     case projectIsArchived $ entityVal project of
-        True -> return Nothing
-        False -> return $ Just project
+        True -> mzero
+        False -> return project
