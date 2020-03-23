@@ -24,7 +24,7 @@ createIssue :: ProjectId -> Issue -> Handler (Either ErrorReason (Entity Issue))
 createIssue pId issue = do
     newId <- liftIO nextRandom
     let issueId = IssueKey $ toText $ newId
-    result <- runIssueDB pId $ \project -> do
+    result <- runProjectIssuesDB pId $ \project -> do
         lift $ insertKey issueId issue
         let existingIssueIds = projectIssueIds $ entityVal project
         lift $ update pId [ ProjectIssueIds =. (issueId : existingIssueIds) ]
@@ -33,19 +33,19 @@ createIssue pId issue = do
 
 getAllIssues :: ProjectId -> Handler (Either ErrorReason ([Entity Issue]))
 getAllIssues pId = do
-    issues <- runIssueDB pId $ \project -> do
+    issues <- runProjectIssuesDB pId $ \project -> do
         result <- lift $ getMany $ projectIssueIds $ entityVal project
         return . (map (uncurry Entity)) . toList $ result
     return $ toNoProject issues
 
 getIssue :: ProjectId -> IssueId -> Handler (Either ErrorReason (Entity Issue))
 getIssue pId issueId = do
-    result <- runIssueDB pId $ \_ -> MaybeT $ getEntity issueId
+    result <- runIssueDB pId issueId $ \_ issue -> return issue
     return $ toNoProject result
 
 deleteIssue :: ProjectId -> IssueId -> Handler (Either ErrorReason IssueId)
 deleteIssue pId issueId = do
-    result <- runIssueDB pId $ \project -> do
+    result <- runIssueDB pId issueId $ \project _ -> do
         let issueIds = projectIssueIds $ entityVal project
         lift $ update pId [ ProjectIssueIds =. (L.delete issueId issueIds) ]
         lift $ delete issueId
@@ -54,14 +54,18 @@ deleteIssue pId issueId = do
 
 changeIssue :: ProjectId -> IssueId -> ChangeIssuePayload -> Handler (Either ErrorReason (Entity Issue))
 changeIssue pId issueId ChangeIssuePayload { title = title, text = text} = do
-    result <- runIssueDB pId $ \_ -> do
-        _ <- MaybeT $ get issueId
+    result <- runIssueDB pId issueId $ \_ _ -> do
         result <- lift $ updateGet issueId [ IssueTitle =. title, IssueText =. text ]
         return $ Entity issueId result
     return $ toNoProject result
 
-runIssueDB :: ProjectId -> (Entity Project -> MaybeT (YesodDB App) a) -> Handler (Maybe a)
-runIssueDB pId action = runDB $ runMaybeT $ do
+runIssueDB :: ProjectId -> IssueId -> (Entity Project -> Entity Issue -> MaybeT (YesodDB App) a) -> Handler (Maybe a)
+runIssueDB pId issueId action = runProjectIssuesDB pId $ \project -> do
+    issue <- MaybeT $ getEntity issueId
+    action project issue
+
+runProjectIssuesDB :: ProjectId -> (Entity Project -> MaybeT (YesodDB App) a) -> Handler (Maybe a)
+runProjectIssuesDB pId action = runDB $ runMaybeT $ do
     project <- findNotArchivedProject pId
     action project
 
