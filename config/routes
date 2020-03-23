@@ -26,3 +26,4 @@
 -- issue
 /api/project/#ProjectId/issue NewIssueR POST
 /api/project/#ProjectId/issues IssuesR GET
+/api/project/#ProjectId/issue/#IssueId IssueR GET DELETE PATCH
