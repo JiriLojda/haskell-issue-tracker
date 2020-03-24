@@ -24,7 +24,6 @@ getIssueCommentR pId issueId commentId = do
     result <- getComment pId issueId commentId
     getResponse result
 
-
 deleteIssueCommentR :: ProjectId -> IssueId -> IssueCommentId -> Handler Value
 deleteIssueCommentR pId issueId commentId = do
     result <- deleteComment pId issueId commentId
