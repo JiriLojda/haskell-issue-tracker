@@ -6,6 +6,7 @@ module Services.Issue
     , deleteIssue
     , getIssue
     , ErrorReason
+    , toNoProject
 ) where
 
 import Data.UUID.V4

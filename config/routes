@@ -27,3 +27,7 @@
 /api/project/#ProjectId/issue NewIssueR POST
 /api/project/#ProjectId/issues IssuesR GET
 /api/project/#ProjectId/issue/#IssueId IssueR GET DELETE PATCH
+
+-- comments
+/api/project/#ProjectId/issue/#IssueId/comment NewIssueCommentR POST
+/api/project/#ProjectId/issue/#IssueId/comments IssueCommentsR GET

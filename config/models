@@ -32,4 +32,3 @@ Issue json
 IssueComment json
     Id Text
     text Text
-    issueId IssueId
