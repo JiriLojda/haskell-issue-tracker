@@ -4,6 +4,7 @@ import Data.UUID.V4
 import Data.UUID
 import Control.Monad.Trans.Maybe
 import Data.Map (toList)
+import qualified Data.List as L
 
 import Import hiding ((.), map, toList)
 import Services.Project
@@ -22,13 +23,45 @@ createComment pId issueId comment = do
         return $ Entity key comment
     return $ toNoProject result
 
-getAllIssues :: ProjectId -> IssueId -> ServiceReturn [Entity IssueComment]
-getAllIssues pId issueId = do
+getAllComments :: ProjectId -> IssueId -> ServiceReturn [Entity IssueComment]
+getAllComments pId issueId = do
     result <- runDB $ runMaybeT $ do
         project <- MaybeT $ getEntity pId
         issue <- MaybeT $ getEntity issueId
         comments <- lift $ getMany $ issueComments $ entityVal issue
         return . (map (uncurry Entity)) . toList $ comments
+    return $ toNoProject result
+
+updateComment :: ProjectId -> IssueId -> IssueCommentId -> IssueComment -> ServiceReturn (Entity IssueComment)
+updateComment pId issueId commentId comment = do
+    result <- runDB $ runMaybeT $ do
+        _ <- MaybeT $ get pId
+        _ <- MaybeT $ get issueId
+        _ <- MaybeT $ get commentId
+        lift $ replace commentId comment
+        return $ Entity commentId comment
+    return $ toNoProject result
+
+getComment :: ProjectId -> IssueId -> IssueCommentId -> ServiceReturn (Entity IssueComment)
+getComment pId issueId commentId = do
+    result <- runDB $ runMaybeT $ do
+        _ <- MaybeT $ get pId
+        _ <- MaybeT $ get issueId
+        comment <- MaybeT $ getEntity commentId
+        return comment
+    return $ toNoProject result
+
+
+deleteComment :: ProjectId -> IssueId -> IssueCommentId -> ServiceReturn (IssueCommentId)
+deleteComment pId issueId commentId = do
+    result <- runDB $ runMaybeT $ do
+        _ <- MaybeT $ get pId
+        issue <- MaybeT $ getEntity issueId
+        _ <- MaybeT $ get commentId
+        lift $ delete commentId
+        let existingCommentIds = issueComments $ entityVal issue
+        lift $ update issueId [ IssueComments =. L.delete commentId existingCommentIds ]
+        return commentId
     return $ toNoProject result
 
 type ServiceReturn a = Handler (Either ErrorReason a)

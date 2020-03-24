@@ -31,3 +31,4 @@
 -- comments
 /api/project/#ProjectId/issue/#IssueId/comment NewIssueCommentR POST
 /api/project/#ProjectId/issue/#IssueId/comments IssueCommentsR GET
+/api/project/#ProjectId/issue/#IssueId/comment/#IssueCommentId IssueCommentR GET DELETE PUT
