@@ -1,35 +1,31 @@
 module Services.Utils where
 
-import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Except
 
 import SharedTypes
 import Import
+import Repositories.Project
+import Repositories.Issue
+import Repositories.IssueComment
 
-runProjectDB :: ProjectId -> (E Project -> DBAction a) -> Handler (Maybe a)
-runProjectDB pId action = runDB $ runMaybeT $ do
+runAllProjectDB :: ProjectId -> (E Project -> DBAction a) -> ServiceReturn a
+runAllProjectDB pId action = runDB $ runExceptT $ do
+    project <- getProject pId
+    action project
+
+runProjectDB :: ProjectId -> (E Project -> DBAction a) -> ServiceReturn a
+runProjectDB pId action = runDB $ runExceptT $ do
     project <- findNotArchivedProject pId
     action project
 
-runIssueDB :: ProjectId -> IssueId -> (E Project -> E Issue -> DBAction a) -> Handler (Maybe a)
+runIssueDB :: ProjectId -> IssueId -> (E Project -> E Issue -> DBAction a) -> ServiceReturn a
 runIssueDB pId issueId action = runProjectDB pId $ \project -> do
-    issue <- MaybeT $ getEntity issueId
+    issue <- getIssue issueId
     action project issue
 
-runIssueCommentDB :: ProjectId -> IssueId -> IssueCommentId -> (E Project -> E Issue -> E IssueComment -> DBAction a) -> Handler (Maybe a)
+runIssueCommentDB :: ProjectId -> IssueId -> IssueCommentId -> (E Project -> E Issue -> E IssueComment -> DBAction a) -> ServiceReturn a
 runIssueCommentDB pId issueId commentId action = runIssueDB pId issueId $ \project issue -> do
-    comment <- MaybeT $ getEntity commentId
+    comment <- getIssueComment commentId
     action project issue comment
-
-
-findNotArchivedProject :: ProjectId -> DBAction (Entity Project)
-findNotArchivedProject pId = do
-    project <- MaybeT $ getEntity $ pId
-    case projectIsArchived $ entityVal project of
-        True -> mzero
-        False -> return project
-
-toNoProject :: Maybe a -> Either ErrorReason a
-toNoProject Nothing = Left NoProject
-toNoProject (Just x) = Right x
 
 type E = Entity

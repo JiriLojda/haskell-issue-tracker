@@ -5,6 +5,7 @@ import Data.UUID
 
 import Import hiding (putStrLn, (.))
 import Services.Project
+import Handler.Utils
 import RequestModels.Project
 
 postNewProjectR :: Handler Value
@@ -36,20 +37,14 @@ patchRenameProjectR :: ProjectId -> Handler Value
 patchRenameProjectR pId = do
     payload <- (requireJsonBody :: Handler RenameProjectPayload)
     updatedProject <- renameProject pId $ name payload
-    case updatedProject of
-        Just x -> returnJson x
-        Nothing -> notFound
+    createResponse updatedProject
 
 patchArchiveProjectR :: ProjectId -> Handler Value
 patchArchiveProjectR pId = do
     updatedProject <- archiveProject pId
-    case updatedProject of
-        Just x -> returnJson x
-        Nothing -> notFound
+    createResponse updatedProject
 
 patchUnarchiveProjectR :: ProjectId -> Handler Value
 patchUnarchiveProjectR pId = do
     updatedProject <- unarchiveProject pId
-    case updatedProject of
-        Just x -> returnJson x
-        Nothing -> notFound
+    createResponse updatedProject

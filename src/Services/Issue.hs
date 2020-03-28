@@ -16,42 +16,33 @@ import Import hiding (map, (.), toList)
 import Services.Utils
 import RequestModels.Issue
 import SharedTypes
+import Repositories.Issue hiding (getIssue)
 
 createIssue :: ProjectId -> Issue -> ServiceReturn (Entity Issue)
 createIssue pId issue = do
     newId <- liftIO nextRandom
     let issueId = IssueKey $ toText $ newId
-    result <- runProjectDB pId $ \project -> do
+    runProjectDB pId $ \project -> do
         lift $ insertKey issueId issue
         let existingIssueIds = projectIssueIds $ entityVal project
         lift $ update pId [ ProjectIssueIds =. (issueId : existingIssueIds) ]
         return $ Entity issueId issue
-    return $ toNoProject result
 
 getAllIssues :: ProjectId -> ServiceReturn [Entity Issue]
-getAllIssues pId = do
-    issues <- runProjectDB pId $ \project -> do
+getAllIssues pId = runProjectDB pId $ \project -> do
         result <- lift $ getMany $ projectIssueIds $ entityVal project
         return . (map (uncurry Entity)) . toList $ result
-    return $ toNoProject issues
 
 getIssue :: ProjectId -> IssueId -> ServiceReturn (Entity Issue)
-getIssue pId issueId = do
-    result <- runIssueDB pId issueId $ \_ issue -> return issue
-    return $ toNoProject result
+getIssue pId issueId = runIssueDB pId issueId $ \_ issue -> return issue
 
 deleteIssue :: ProjectId -> IssueId -> ServiceReturn IssueId
-deleteIssue pId issueId = do
-    result <- runIssueDB pId issueId $ \project _ -> do
+deleteIssue pId issueId = runIssueDB pId issueId $ \project _ -> do
         let issueIds = projectIssueIds $ entityVal project
         lift $ update pId [ ProjectIssueIds =. (L.delete issueId issueIds) ]
         lift $ delete issueId
         return issueId
-    return $ toNoProject result
 
 changeIssue :: ProjectId -> IssueId -> ChangeIssuePayload -> ServiceReturn (Entity Issue)
-changeIssue pId issueId ChangeIssuePayload { title = title, text = text} = do
-    result <- runIssueDB pId issueId $ \_ _ -> do
-        result <- lift $ updateGet issueId [ IssueTitle =. title, IssueText =. text ]
-        return $ Entity issueId result
-    return $ toNoProject result
+changeIssue pId issueId ChangeIssuePayload { title = title, text = text} = 
+    runIssueDB pId issueId $ \_ _ -> updateIssue issueId [ IssueTitle =. title, IssueText =. text ]

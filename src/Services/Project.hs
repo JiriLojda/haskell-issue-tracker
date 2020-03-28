@@ -4,22 +4,18 @@ module Services.Project
 , archiveProject
 ) where
 
-import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Except
 
 import Import
+import SharedTypes
+import Repositories.Project
+import Services.Utils
 
-renameProject :: ProjectId -> Text -> Handler (Maybe (Entity Project))
-renameProject pId newName = runDB $ runMaybeT $ updateProject pId [ ProjectName =. newName ]
+renameProject :: ProjectId -> Text -> ServiceReturn (Entity Project)
+renameProject pId newName = runProjectDB pId $ \_ -> updateProject pId [ ProjectName =. newName ]
 
-archiveProject :: ProjectId -> Handler (Maybe (Entity Project))
-archiveProject pId = runDB $ runMaybeT $ updateProject pId [ ProjectIsArchived =. True ]
+archiveProject :: ProjectId -> ServiceReturn (Entity Project)
+archiveProject pId = runProjectDB pId $ \_ -> updateProject pId [ ProjectIsArchived =. True ]
 
-unarchiveProject :: ProjectId -> Handler (Maybe (Entity Project))
-unarchiveProject pId = runDB $ runMaybeT $ updateProject pId [ ProjectIsArchived =. False ]
-
-updateProject :: ProjectId -> [Update Project] -> MaybeT (YesodDB App) (Entity Project)
-updateProject pId mods = do
-    _ <- MaybeT $ get $ pId
-    updatedProject <- lift $ updateGet pId mods
-    return $ Entity pId updatedProject
-
+unarchiveProject :: ProjectId -> ServiceReturn (Entity Project)
+unarchiveProject pId = runAllProjectDB pId $ \_ -> updateProject pId [ ProjectIsArchived =. False ]
