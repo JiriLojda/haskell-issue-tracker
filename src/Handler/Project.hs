@@ -27,11 +27,7 @@ patchRenameProjectR pId = do
     createResponse updatedProject
 
 patchArchiveProjectR :: ProjectId -> Handler Value
-patchArchiveProjectR pId = do
-    updatedProject <- archiveProject pId
-    createResponse updatedProject
+patchArchiveProjectR pId = archiveProject pId >>= createResponse
 
 patchUnarchiveProjectR :: ProjectId -> Handler Value
-patchUnarchiveProjectR pId = do
-    updatedProject <- unarchiveProject pId
-    createResponse updatedProject
+patchUnarchiveProjectR pId = unarchiveProject pId >>= createResponse

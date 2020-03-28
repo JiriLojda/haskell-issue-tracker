@@ -11,19 +11,13 @@ postNewIssueCommentR pId issueId = do
     createStatusResponse created201 result
 
 getIssueCommentsR :: ProjectId -> IssueId -> Handler Value
-getIssueCommentsR pId issueId = do
-    result <- getAllComments pId issueId
-    createResponse result
+getIssueCommentsR pId issueId = getAllComments pId issueId >>= createResponse
 
 getIssueCommentR :: ProjectId -> IssueId -> IssueCommentId -> Handler Value
-getIssueCommentR pId issueId commentId = do
-    result <- getComment pId issueId commentId
-    createResponse result
+getIssueCommentR pId issueId commentId = getComment pId issueId commentId >>= createResponse
 
 deleteIssueCommentR :: ProjectId -> IssueId -> IssueCommentId -> Handler Value
-deleteIssueCommentR pId issueId commentId = do
-    result <- deleteComment pId issueId commentId
-    createResponse result
+deleteIssueCommentR pId issueId commentId = deleteComment pId issueId commentId >>= createResponse
 
 putIssueCommentR :: ProjectId -> IssueId -> IssueCommentId -> Handler Value
 putIssueCommentR pId issueId commentId = do

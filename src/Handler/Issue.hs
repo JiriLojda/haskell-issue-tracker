@@ -12,19 +12,13 @@ postNewIssueR pId = do
     createStatusResponse created201 result
 
 getIssuesR :: ProjectId -> Handler Value
-getIssuesR pId = do
-    issues <- getAllIssues pId
-    createResponse issues
+getIssuesR pId = getAllIssues pId >>= createResponse
 
 getIssueR :: ProjectId -> IssueId -> Handler Value
-getIssueR pId issueId = do
-    issue <- getIssue pId issueId
-    createResponse issue
+getIssueR pId issueId = getIssue pId issueId >>= createResponse
 
 deleteIssueR :: ProjectId -> IssueId -> Handler Value
-deleteIssueR pId issueId = do
-    result <- deleteIssue pId issueId
-    createResponse result
+deleteIssueR pId issueId = deleteIssue pId issueId >>= createResponse
 
 patchIssueR :: ProjectId -> IssueId -> Handler Value
 patchIssueR pId issueId = do
