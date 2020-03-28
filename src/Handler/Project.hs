@@ -1,8 +1,5 @@
 module Handler.Project where
 
-import Data.UUID.V4
-import Data.UUID
-
 import Import hiding (putStrLn, (.))
 import Services.Project
 import Handler.Utils
@@ -11,27 +8,17 @@ import RequestModels.Project
 postNewProjectR :: Handler Value
 postNewProjectR = do
     project <- (requireJsonBody :: Handler Project)
-    newId <- liftIO nextRandom
-    let pId = ProjectKey $ toText newId
-    runDB $ insertKey pId project
-    sendStatusJSON created201 $ Entity pId project
+    result <- createProject project
+    createStatusResponse created201 result
 
 getProjectsR :: Handler Value
-getProjectsR = do
-    projects <- runDB $ selectList [] [Asc ProjectId]
-    returnJson projects
+getProjectsR = getAllProjects >>= createResponse
 
 getProjectR :: ProjectId -> Handler Value
-getProjectR pId = do
-    project <- runDB $ get pId
-    case project of
-        Just x -> returnJson x
-        Nothing -> notFound
+getProjectR pId = getProject pId >>= createResponse
 
 deleteProjectR :: ProjectId -> Handler Value
-deleteProjectR pId = do
-    runDB $ delete pId
-    sendStatusJSON ok200 ()
+deleteProjectR pId = deleteProject pId >>= createResponse
 
 patchRenameProjectR :: ProjectId -> Handler Value
 patchRenameProjectR pId = do
