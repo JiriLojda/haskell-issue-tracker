@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Services.Project 
 (
     renameProject
@@ -12,18 +14,23 @@ module Services.Project
 import Control.Monad.Trans.Except
 import Data.UUID.V4
 import Data.UUID
+import Database.Persist.Sqlite
 
 import Import hiding ((.), id)
 import SharedTypes
 import qualified Repositories.Project as R
+import Repositories.WorkflowStep
 import Services.Utils
 
-createProject :: Project -> ServiceReturn (Entity Project)
-createProject project = do
+createProject :: Text -> ServiceReturn (Entity Project)
+createProject name = do
     newId <- liftIO nextRandom
-    let pId = ProjectKey $ toText newId
-    runDB $ insertKey pId project
-    return $ Right $ Entity pId project
+    runDB $ runExceptT $ do
+        wfStepIds <- insertDefaultWorkflow
+        let pId = ProjectKey $ toText newId
+            project = Project name False [] wfStepIds
+        lift $ insertKey pId project
+        return $ Entity pId project
 
 getAllProjects :: ServiceReturn [Entity Project]
 getAllProjects = do
@@ -46,3 +53,10 @@ archiveProject pId = runProjectDB pId $ \_ -> R.updateProject pId [ ProjectIsArc
 
 unarchiveProject :: ProjectId -> ServiceReturn (Entity Project)
 unarchiveProject pId = runAllProjectDB pId $ \_ -> R.updateProject pId [ ProjectIsArchived =. False ]
+
+defaultWorkflow :: [WorkflowStep]
+defaultWorkflow = [WorkflowStep "Open", WorkflowStep "Waiting", WorkflowStep "Closed"]
+
+insertDefaultWorkflow :: DBAction [WorkflowStepId]
+insertDefaultWorkflow = mapM ((>>= return . entityKey) . createWorkflowStep) defaultWorkflow
+

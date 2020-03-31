@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module RequestModels.Project where
+module RequestModels.Project.Rename where
 
 import Import
 

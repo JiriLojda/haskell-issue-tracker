@@ -7,6 +7,7 @@ import Import
 import Repositories.Project
 import Repositories.Issue
 import Repositories.IssueComment
+import Repositories.WorkflowStep
 
 runAllProjectDB :: ProjectId -> (E Project -> DBAction a) -> ServiceReturn a
 runAllProjectDB pId action = runDB $ runExceptT $ do
@@ -27,5 +28,10 @@ runIssueCommentDB :: ProjectId -> IssueId -> IssueCommentId -> (E Project -> E I
 runIssueCommentDB pId issueId commentId action = runIssueDB pId issueId $ \project issue -> do
     comment <- getIssueComment commentId
     action project issue comment
+
+runWorkflowStepDB :: ProjectId -> WorkflowStepId -> (E Project -> E WorkflowStep -> DBAction a) -> ServiceReturn a
+runWorkflowStepDB pId stepId action = runProjectDB pId $ \project -> do
+    step <- getWorkflowStep stepId
+    action project step
 
 type E = Entity

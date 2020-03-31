@@ -1,6 +1,5 @@
 module Repositories.Issue where
 
-import Control.Monad.Trans.Except
 import Control.Monad.Trans.Maybe
 
 import Import hiding ((.))

@@ -2,13 +2,14 @@ module Handler.Issue where
 
 import Import
 import Services.Issue
-import RequestModels.Issue
+import RequestModels.Issue.Create
+import RequestModels.Issue.Change
 import Handler.Utils
 
 postNewIssueR :: ProjectId -> Handler Value
 postNewIssueR pId = do
-    issue <- (requireJsonBody :: Handler Issue)
-    result <- createIssue pId issue
+    payload <- (requireJsonBody :: Handler CreateIssuePayload)
+    result <- createIssue pId payload
     createStatusResponse created201 result
 
 getIssuesR :: ProjectId -> Handler Value

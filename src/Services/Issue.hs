@@ -14,14 +14,16 @@ import Data.Map (toList)
 
 import Import hiding (map, (.), toList)
 import Services.Utils
-import RequestModels.Issue
+import qualified RequestModels.Issue.Create as C
+import qualified RequestModels.Issue.Change as M
 import SharedTypes
 import Repositories.Issue hiding (getIssue)
 
-createIssue :: ProjectId -> Issue -> ServiceReturn (Entity Issue)
-createIssue pId issue = do
+createIssue :: ProjectId -> C.CreateIssuePayload -> ServiceReturn (Entity Issue)
+createIssue pId C.CreateIssuePayload { C.title = title, C.text = text, C.step = step } = do
     newId <- liftIO nextRandom
     let issueId = IssueKey $ toText $ newId
+        issue = Issue title text [] step
     runProjectDB pId $ \project -> do
         lift $ insertKey issueId issue
         let existingIssueIds = projectIssueIds $ entityVal project
@@ -43,6 +45,6 @@ deleteIssue pId issueId = runIssueDB pId issueId $ \project _ -> do
         lift $ delete issueId
         return issueId
 
-changeIssue :: ProjectId -> IssueId -> ChangeIssuePayload -> ServiceReturn (Entity Issue)
-changeIssue pId issueId ChangeIssuePayload { title = title, text = text} = 
+changeIssue :: ProjectId -> IssueId -> M.ChangeIssuePayload -> ServiceReturn (Entity Issue)
+changeIssue pId issueId M.ChangeIssuePayload { M.title = title, M.text = text} = 
     runIssueDB pId issueId $ \_ _ -> updateIssue issueId [ IssueTitle =. title, IssueText =. text ]

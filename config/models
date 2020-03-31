@@ -24,11 +24,16 @@ Project json
     name Text
     isArchived Bool
     issueIds [IssueId]
+    workflowStepIds [WorkflowStepId]
 Issue json
     Id Text
     title Text
     text Text
     comments [IssueCommentId]
+    step WorkflowStepId
 IssueComment json
     Id Text
     text Text
+WorkflowStep json
+    Id Text
+    name Text

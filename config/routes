@@ -32,3 +32,7 @@
 /api/project/#ProjectId/issue/#IssueId/comment NewIssueCommentR POST
 /api/project/#ProjectId/issue/#IssueId/comments IssueCommentsR GET
 /api/project/#ProjectId/issue/#IssueId/comment/#IssueCommentId IssueCommentR GET DELETE PUT
+
+-- workflow
+/api/project/#ProjectId/workflow AllWorkflowR POST GET
+/api/project/#ProjectId/workflow/#WorkflowStepId WorkflowR GET PUT DELETE
