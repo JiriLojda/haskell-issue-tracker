@@ -7,10 +7,11 @@
 {-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Foundation where
 
-import Import.NoFoundation
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Text.Jasmine         (minifym)
 import Control.Monad.Logger (LogSource)
@@ -22,6 +23,13 @@ import Yesod.Auth.OpenId    (authOpenId, IdentifierType (Claimed))
 import Yesod.Default.Util   (addStaticContentExternal)
 import Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
+
+import Data.ByteString.Lazy (fromStrict)
+import Data.ByteString (drop, length)
+import qualified Network.Wai.Internal as W
+
+import Import.NoFoundation hiding (fromStrict, keys, drop, putStrLn, length)
+import Auth
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -121,7 +129,7 @@ instance Yesod App where
     -- delegate to that function
     isAuthorized ProfileR _ = isAuthenticated
     -- my routes ignore for new TODO: remove when dealing with auth
-    isAuthorized _ _ = return Authorized
+    isAuthorized _ _ = isAuthenticated
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -214,13 +222,18 @@ instance YesodAuth App where
         -- Enable authDummy login if enabled.
         where extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
 
--- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
 isAuthenticated = do
-    muid <- maybeAuthId
-    return $ case muid of
-        Nothing -> Unauthorized "You must login to access this page"
-        Just _ -> Authorized
+    request <- waiRequest
+    App {..} <- getYesod
+    let authHeader = lookup "Authorization" $ W.requestHeaders request
+    case authHeader of
+        Nothing -> return $ Unauthorized "No Authorization header."
+        Just token -> do
+            result <- liftIO $ verifyUserToken appSettings $ fromStrict $ drop (length "Bearer ") token
+            return $ case result of
+                Left e -> Unauthorized $ createErrorMessage e
+                Right _ -> Authorized
 
 instance YesodAuthPersist App
 

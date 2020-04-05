@@ -139,7 +139,7 @@ getApplicationDev = do
     return (wsettings, app)
 
 getAppSettings :: IO AppSettings
-getAppSettings = loadYamlSettings [configSettingsYml] [] useEnv
+getAppSettings = loadYamlSettings ["config/secrets.yml", configSettingsYml] [] useEnv
 
 -- | main function for use by yesod devel
 develMain :: IO ()
@@ -148,20 +148,22 @@ develMain = develMainHelper getApplicationDev
 -- | The @main@ function for an executable running this site.
 appMain :: IO ()
 appMain = do
-    -- Get the settings from all relevant sources
-    settings <- loadYamlSettingsArgs
-        -- fall back to compile-time values, set to [] to require values at runtime
-        [configSettingsYmlValue]
-
-        -- allow environment variables to override
-        useEnv
-
+    -- get config file from command line args:
+    -- settings <- loadYamlSettingsArgs
+    --     -- fall back to compile-time values, set to [] to require values at runtime
+    --     ["config/secrets.yml", "config/settings.yml"]
+    --     -- allow environment variables to override
+    --     useEnv
+    settings <- loadYamlSettings ["config/secrets.yml", configSettingsYml] [] useEnv
     -- Generate the foundation from the settings
     foundation <- makeFoundation settings
 
     -- Generate a WAI Application from the foundation
     app <- makeApplication foundation
 
+    hSetBuffering stdout NoBuffering
+    putStrLn "Starting server with settings: "
+    putStrLn $ pack $ show settings
     -- Run the application with Warp
     runSettings (warpSettings foundation) app
 

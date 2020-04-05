@@ -61,7 +61,10 @@ data AppSettings = AppSettings
 
     , appAuthDummyLogin         :: Bool
     -- ^ Indicate if auth dummy login should be enabled.
-    }
+    , appAuthAudience           :: String
+    , appAuthIssuer             :: String
+    , appAuthPublicKeyRoute     :: String
+    } deriving (Show)
 
 instance FromJSON AppSettings where
     parseJSON = withObject "AppSettings" $ \o -> do
@@ -90,6 +93,10 @@ instance FromJSON AppSettings where
         appAnalytics              <- o .:? "analytics"
 
         appAuthDummyLogin         <- o .:? "auth-dummy-login"      .!= dev
+
+        appAuthAudience           <- o .: "auth-audience"
+        appAuthIssuer             <- o .: "auth-issuer"
+        appAuthPublicKeyRoute     <- o .: "auth-public-key-route"
 
         return AppSettings {..}
 

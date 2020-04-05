@@ -35,3 +35,7 @@ database:
 
 copyright: Insert copyright statement here
 #analytics: UA-YOURCODE
+
+auth-audience: ""
+auth-issuer: ""
+auth-public-key-route: ""
