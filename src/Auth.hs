@@ -37,7 +37,7 @@ verifyUserToken settings token = runExceptT $ do
     -- when (not $ null $ view unregisteredClaims claims) (ExceptT $ return $ Left $ JWTClaimsSetDecodeError ("Unregistered claims encountered: " ++ (show $ view unregisteredClaims claims)))
     return $ show $ view claimSub claims
 
-createErrorMessage :: JWTError -> Text
+createErrorMessage :: JWTError -> String
 createErrorMessage JWTExpired = "The token is expired."
 createErrorMessage (JWTClaimsSetDecodeError e) = ("Invalid claims " ++ pack e)
 createErrorMessage JWTNotInIssuer = "Bad issuer."
@@ -47,7 +47,7 @@ createErrorMessage JWTNotYetValid = "Token is not valid now."
 createErrorMessage (JWSError e) = createJwsErrorMessage e
 createErrorMessage _ = "Token is not valid."
 
-createJwsErrorMessage :: Error -> Text
+createJwsErrorMessage :: Error -> String
 createJwsErrorMessage AlgorithmNotImplemented = "Algorithm not supported."
 createJwsErrorMessage (AlgorithmMismatch _) = "Algorithm not supported."
 createJwsErrorMessage (KeyMismatch e) = "Wrong type of key encountered: " ++ (pack e)

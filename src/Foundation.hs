@@ -224,16 +224,33 @@ instance YesodAuth App where
 
 isAuthenticated :: Handler AuthResult
 isAuthenticated = do
+    result <- cachedEitherUserId
+    return $ case result of
+        Left e -> Unauthorized $ pack e
+        Right _ -> Authorized
+
+currentUserId :: Handler String
+currentUserId = do
+    result <- cachedEitherUserId
+    return $ either (const undefined) id result
+
+newtype UserIdCache = UserIdCache { eitherUserId :: Either String String }
+
+cachedEitherUserId :: Handler ( Either String String)
+cachedEitherUserId = fmap eitherUserId $ cached $ fmap UserIdCache getEitherUserId
+
+getEitherUserId :: Handler ( Either String String)
+getEitherUserId = do
     request <- waiRequest
     App {..} <- getYesod
     let authHeader = lookup "Authorization" $ W.requestHeaders request
     case authHeader of
-        Nothing -> return $ Unauthorized "No Authorization header."
+        Nothing -> return $ Left "No Authorization header."
         Just token -> do
             result <- liftIO $ verifyUserToken appSettings $ fromStrict $ drop (length "Bearer ") token
             return $ case result of
-                Left e -> Unauthorized $ createErrorMessage e
-                Right _ -> Authorized
+                Left e -> Left $ createErrorMessage e
+                Right x -> Right x
 
 instance YesodAuthPersist App
 
