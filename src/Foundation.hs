@@ -223,16 +223,10 @@ instance YesodAuth App where
         where extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
 
 isAuthenticated :: Handler AuthResult
-isAuthenticated = do
-    result <- cachedEitherUserId
-    return $ case result of
-        Left e -> Unauthorized $ pack e
-        Right _ -> Authorized
+isAuthenticated = cachedEitherUserId >>= (return . either (Unauthorized . pack) (const Authorized))
 
 currentUserId :: Handler String
-currentUserId = do
-    result <- cachedEitherUserId
-    return $ either (const undefined) id result
+currentUserId = cachedEitherUserId >>= (return . either (const $ error "User is not authorized.") id)
 
 newtype UserIdCache = UserIdCache { eitherUserId :: Either String String }
 
@@ -248,9 +242,7 @@ getEitherUserId = do
         Nothing -> return $ Left "No Authorization header."
         Just token -> do
             result <- liftIO $ verifyUserToken appSettings $ fromStrict $ drop (length "Bearer ") token
-            return $ case result of
-                Left e -> Left $ createErrorMessage e
-                Right x -> Right x
+            return $ bimap createErrorMessage id result
 
 instance YesodAuthPersist App
 
