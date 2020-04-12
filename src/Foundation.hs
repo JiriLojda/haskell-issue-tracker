@@ -30,6 +30,7 @@ import qualified Network.Wai.Internal as W
 
 import Import.NoFoundation hiding (fromStrict, keys, drop, putStrLn, length)
 import Auth
+import Services.User (getUser)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -207,14 +208,7 @@ instance YesodAuth App where
 
     authenticate :: (MonadHandler m, HandlerSite m ~ App)
                  => Creds App -> m (AuthenticationResult App)
-    authenticate creds = liftHandler $ runDB $ do
-        x <- getBy $ UniqueUser $ credsIdent creds
-        case x of
-            Just (Entity uid _) -> return $ Authenticated uid
-            Nothing -> Authenticated <$> insert User
-                { userIdent = credsIdent creds
-                , userPassword = Nothing
-                }
+    authenticate creds = liftHandler $ fmap Authenticated currentUserId
 
     -- You can add other plugins like Google Email, email or OAuth here
     authPlugins :: App -> [AuthPlugin App]
@@ -223,17 +217,35 @@ instance YesodAuth App where
         where extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
 
 isAuthenticated :: Handler AuthResult
-isAuthenticated = cachedEitherUserId >>= (return . either (Unauthorized . pack) (const Authorized))
+isAuthenticated = cachedEitherUser >>= (return . either (Unauthorized . pack) (const Authorized))
 
-currentUserId :: Handler String
+currentUserId :: Handler UserId
 currentUserId = cachedEitherUserId >>= (return . either (const $ error "User is not authorized.") id)
 
-newtype UserIdCache = UserIdCache { eitherUserId :: Either String String }
+currentUser :: Handler (Entity User)
+currentUser = cachedEitherUser >>= (return . either (const $ error "User is not authorized.") id)
 
-cachedEitherUserId :: Handler ( Either String String)
+newtype UserIdCache = UserIdCache { eitherUserId :: Either String UserId }
+newtype UserCache = UserCache { eitherUser :: Either String (Entity User) }
+
+cachedEitherUserId :: Handler (Either String UserId)
 cachedEitherUserId = fmap eitherUserId $ cached $ fmap UserIdCache getEitherUserId
 
-getEitherUserId :: Handler ( Either String String)
+cachedEitherUser :: Handler (Either String (Entity User))
+cachedEitherUser = do
+    eUserId <- cachedEitherUserId
+    case eUserId of
+        Left e -> return $ Left e 
+        Right userId -> fmap eitherUser $ cached $ fmap UserCache $ getEitherUser userId
+
+getEitherUser :: UserId -> Handler (Either String (Entity User))
+getEitherUser userId = do
+    result <- getUser userId
+    return $ case result of
+        Nothing -> Left "Token not connected to any user. Create user first."
+        Just x -> Right x
+
+getEitherUserId :: Handler (Either String UserId)
 getEitherUserId = do
     request <- waiRequest
     App {..} <- getYesod
@@ -242,7 +254,7 @@ getEitherUserId = do
         Nothing -> return $ Left "No Authorization header."
         Just token -> do
             result <- liftIO $ verifyUserToken appSettings $ fromStrict $ drop (length "Bearer ") token
-            return $ bimap createErrorMessage id result
+            return $ bimap createErrorMessage (UserKey . pack) result
 
 instance YesodAuthPersist App
 

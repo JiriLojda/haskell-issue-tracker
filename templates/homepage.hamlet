@@ -45,7 +45,6 @@
                             most of them are brought together by the <tt>defaultLayout</tt> function which #
                             is defined in the <tt>Foundation.hs</tt> module, and used by <tt>#{handlerName}</tt>. #
                             All the files for templates and wigdets are in <tt>templates</tt>.
-
                         <li .list-group-item>
                             A Widget's Html, Css and Javascript are separated in three files with the
                             <tt>.hamlet</tt>, <tt>.lucius</tt> and <tt>.julius</tt> extensions.
@@ -121,8 +120,7 @@
                        Your comments will appear here. You can also open the
                        console log to see the raw response from the server.
                    <ul ##{commentListId}>
-                       $forall comment <- allComments
-                           <li>#{commentMessage $ entityVal comment}
+                       Not implemented
 
     <hr>
 
