@@ -15,12 +15,13 @@ import Crypto.JWT (
     , verifyClaims
     , claimSub
     , decodeCompact
+    , string
     )
 import Network.HTTP.Simple (JSONException, httpJSONEither, getResponseBody)
 import qualified Data.ByteString.Lazy.Internal as B
 import Control.Monad.Trans.Except (ExceptT(..), runExceptT)
 import qualified Data.List as Lst
-import Control.Lens (over, view)
+import Control.Lens (over, view, _Just)
 
 data KeyResponse = KeyResponse{ keys :: [JWK] } deriving (Show, Generic)
 instance FromJSON KeyResponse where
@@ -35,7 +36,7 @@ verifyUserToken settings token = runExceptT $ do
     claims <- verifyClaims (createJwtValidationConfig settings) justJwk decodedToken
     -- consider checking no unregistered claims:
     -- when (not $ null $ view unregisteredClaims claims) (ExceptT $ return $ Left $ JWTClaimsSetDecodeError ("Unregistered claims encountered: " ++ (show $ view unregisteredClaims claims)))
-    return $ show $ view claimSub claims
+    return $ view (claimSub . _Just . string) claims
 
 createErrorMessage :: JWTError -> String
 createErrorMessage JWTExpired = "The token is expired."

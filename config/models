@@ -19,7 +19,7 @@ IssueComment json
 WorkflowStep json
     Id Text
     name Text
-User
+User json
     Id Text
     firstName Text
     lastName Text

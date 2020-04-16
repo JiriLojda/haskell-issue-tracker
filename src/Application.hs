@@ -46,6 +46,7 @@ import Handler.Project
 import Handler.Issue
 import Handler.IssueComment
 import Handler.WorkflowStep
+import Handler.User
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the

@@ -101,6 +101,8 @@ instance Yesod App where
     isAuthorized RobotsR _ = return Authorized
     isAuthorized (StaticR _) _ = return Authorized
 
+    -- Signup has to have a valid token, but no user is in a database yet
+    isAuthorized SignupR _ = canCreateUser
     -- Routes that are authenticated
     isAuthorized _ _ = isAuthenticated
 
@@ -151,6 +153,9 @@ instance YesodPersist App where
 instance YesodPersistRunner App where
     getDBRunner :: Handler (DBRunner App, Handler ())
     getDBRunner = defaultGetDBRunner appConnPool
+
+canCreateUser :: Handler AuthResult
+canCreateUser = cachedEitherUserId >>= (return . either (Unauthorized . pack) (const Authorized))
 
 isAuthenticated :: Handler AuthResult
 isAuthenticated = cachedEitherUser >>= (return . either (Unauthorized . pack) (const Authorized))

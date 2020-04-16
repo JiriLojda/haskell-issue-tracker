@@ -28,3 +28,7 @@
 -- workflow
 /api/project/#ProjectId/workflow AllWorkflowR POST GET
 /api/project/#ProjectId/workflow/#WorkflowStepId WorkflowR GET PUT DELETE
+
+-- users
+/api/signup SignupR POST
+/api/user/#UserId UserR GET POST
