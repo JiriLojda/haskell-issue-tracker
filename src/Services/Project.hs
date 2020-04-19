@@ -60,20 +60,16 @@ unarchiveProject pId = runAllProjectDB pId $ \_ -> R.updateProject pId [ Project
 addContributor :: ProjectId -> UserId -> ServiceReturn (Entity Project)
 addContributor pId userId = do
     user <- getUser userId
-    case user of
-        Nothing -> return $ Left NoUser
-        Just _ -> runProjectDB pId $ \project -> do 
-            let newContributorIds = (userId : (projectContributorIds $ entityVal project))
-            R.updateProject pId [ ProjectContributorIds =. newContributorIds ]
+    runProjectDB pId $ \project -> do 
+        let newContributorIds = (userId : (projectContributorIds $ entityVal project))
+        R.updateProject pId [ ProjectContributorIds =. newContributorIds ]
 
 removeContributor :: ProjectId -> UserId -> ServiceReturn (Entity Project)
 removeContributor pId userId = do
     user <- getUser userId
-    case user of
-        Nothing -> return $ Left NoUser
-        Just _ -> runProjectDB pId $ \project -> do 
-            let oldContributorIds = projectContributorIds $ entityVal project
-            R.updateProject pId [ ProjectContributorIds =. (List.delete userId oldContributorIds) ]
+    runProjectDB pId $ \project -> do 
+        let oldContributorIds = projectContributorIds $ entityVal project
+        R.updateProject pId [ ProjectContributorIds =. (List.delete userId oldContributorIds) ]
 
 defaultWorkflow :: [WorkflowStep]
 defaultWorkflow = [WorkflowStep "Open", WorkflowStep "Waiting", WorkflowStep "Closed"]

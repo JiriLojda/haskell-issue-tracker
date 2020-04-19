@@ -6,7 +6,13 @@ import Yesod.Core.Handler (HandlerFor)
 
 import AppModel (App)
 
-data ErrorReason = NoProject | ArchivedProject | NoIssue | NoIssueComment | NoWorkflowStep | NoUser
+data ErrorReason = NoProject
+    | ArchivedProject
+    | NoIssue
+    | NoIssueComment
+    | NoWorkflowStep
+    | NoUser
+    | UserAlreadyExists
 
 type ServiceReturn a = HandlerFor App (Either ErrorReason a)
 type DBAction a = ExceptT ErrorReason (YesodDB App) a

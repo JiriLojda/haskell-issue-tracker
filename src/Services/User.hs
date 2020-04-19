@@ -4,31 +4,32 @@
 
 module Services.User where
 
-import Yesod.Core.Handler (HandlerFor)
 import Database.Persist.Types (Entity(..))
 import Database.Persist (insertKey, getEntity, replace)
-import Database.Persist.Sqlite (SqlBackend)
-import Yesod.Persist.Core (YesodPersist, YesodPersistBackend, runDB)
+import Yesod.Persist.Core (runDB)
+import Control.Monad.Trans.Except
+import Control.Monad.Trans.Class
+import Data.Either.Utils
 
 import Model
+import SharedTypes
 
-getUser :: (YesodPersist s, YesodPersistBackend s ~ SqlBackend) => UserId -> HandlerFor s (Maybe (Entity User))
-getUser = runDB . getEntity
+getUser :: UserId -> ServiceReturn (Entity User)
+getUser userId = do
+    result <- runDB $ getEntity userId
+    return $ maybeToEither NoUser result
 
-createUser :: (YesodPersist s, YesodPersistBackend s ~ SqlBackend) => UserId -> User -> HandlerFor s (Maybe (Entity User))
+createUser :: UserId -> User -> ServiceReturn (Entity User)
 createUser userId user = runDB $ do
     existing <- getEntity userId
     case existing of
-        Just _ -> return Nothing
+        Just _ -> return $ Left UserAlreadyExists
         Nothing -> do
             insertKey userId user
-            return $ Just $ Entity userId user
+            return $ Right $ Entity userId user
 
-updateUser :: (YesodPersist s, YesodPersistBackend s ~ SqlBackend) => UserId -> User -> HandlerFor s (Maybe (Entity User))
-updateUser userId user = runDB $ do
-    existing <- getEntity userId
-    case existing of
-        Nothing -> return Nothing
-        Just _ -> do
-            replace userId user
-            return $ Just $ Entity userId user
+updateUser :: UserId -> User -> ServiceReturn (Entity User)
+updateUser userId user = runExceptT $ do
+    _ <- ExceptT $ getUser userId
+    lift $ runDB $ replace userId user
+    return $ Entity userId user

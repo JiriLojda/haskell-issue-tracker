@@ -193,9 +193,7 @@ cachedEitherUser = do
 getEitherUser :: UserId -> Handler (Either String (Entity User))
 getEitherUser userId = do
     result <- getUser userId
-    return $ case result of
-        Nothing -> Left "Token not connected to any user. Create user first."
-        Just x -> Right x
+    return $ bimap (const "Token not connected to any user. Create user first.") id result
 
 getEitherUserId :: Handler (Either String UserId)
 getEitherUserId = do
