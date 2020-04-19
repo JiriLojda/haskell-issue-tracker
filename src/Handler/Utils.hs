@@ -17,3 +17,4 @@ createErrorResponse ArchivedProject = sendStatusJSON status404 "The project is a
 createErrorResponse NoIssue = sendStatusJSON status404 "Issue not found."
 createErrorResponse NoIssueComment = sendStatusJSON status404 "Comment not found."
 createErrorResponse NoWorkflowStep = sendStatusJSON status404 "Workflow step not found."
+createErrorResponse NoUser = sendStatusJSON status404 "User not found."

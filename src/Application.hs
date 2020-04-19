@@ -37,6 +37,8 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              mkRequestLogger, outputFormat)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
+import Data.Cache                           (newCache)                                             
+import AppModel
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
@@ -53,6 +55,14 @@ import Handler.User
 -- comments there for more details.
 mkYesodDispatch "App" resourcesApp
 
+twoHoursInNanoseconds :: Integer
+twoHoursInNanoseconds = 72 * 10 ^ 11
+
+makeDataCache :: AppSettings -> IO DataCache
+makeDataCache _ = do
+    projectsCache <- newCache $ Just $ fromInteger twoHoursInNanoseconds
+    return $ DataCache {..}
+
 -- | This function allocates resources (such as a database connection pool),
 -- performs initialization and returns a foundation datatype value. This is also
 -- the place to put your migrate statements to have automatic database
@@ -66,6 +76,7 @@ makeFoundation appSettings = do
     appStatic <-
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
+    dataCache <- makeDataCache appSettings
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a

@@ -9,12 +9,13 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Foundation where
 
-import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Text.Jasmine         (minifym)
 import Control.Monad.Logger (LogSource)
+import Control.Monad.Trans.Except (runExceptT)
 
 import Yesod.Default.Util   (addStaticContentExternal)
 import Yesod.Core.Types     (Logger)
@@ -27,18 +28,8 @@ import qualified Network.Wai.Internal as W
 import Import.NoFoundation hiding (fromStrict, keys, drop, putStrLn, length)
 import Auth
 import Services.User (getUser)
-
--- | The foundation datatype for your application. This can be a good place to
--- keep settings and values requiring initialization before your application
--- starts running, such as database connections. Every handler will have
--- access to the data present here.
-data App = App
-    { appSettings    :: AppSettings
-    , appStatic      :: Static -- ^ Settings for static file serving.
-    , appConnPool    :: ConnectionPool -- ^ Database connection pool.
-    , appHttpManager :: Manager
-    , appLogger      :: Logger
-    }
+import Repositories.Project (getProject)
+import AppModel
 
 -- This is where we define all of the routes in our application. For a full
 -- explanation of the syntax, please see:
@@ -103,8 +94,24 @@ instance Yesod App where
 
     -- Signup has to have a valid token, but no user is in a database yet
     isAuthorized SignupR _ = canCreateUser
-    -- Routes that are authenticated
-    isAuthorized _ _ = isAuthenticated
+    -- Routes that are authenticated with project access
+    isAuthorized (ProjectR pId) _ = isAuthenticatedWithProject pId
+    isAuthorized (UnarchiveProjectR pId) _ = isAuthenticatedWithProject pId
+    isAuthorized (ArchiveProjectR pId) _ = isAuthenticatedWithProject pId
+    isAuthorized (RenameProjectR pId) _ = isAuthenticatedWithProject pId
+    isAuthorized (IssuesR pId) _ = isAuthenticatedWithProject pId
+    isAuthorized (NewIssueR pId) _ = isAuthenticatedWithProject pId
+    isAuthorized (AllWorkflowR pId) _ = isAuthenticatedWithProject pId
+    isAuthorized (WorkflowR pId _) _ = isAuthenticatedWithProject pId
+    isAuthorized (ProjectContributorR pId _) _ = isAuthenticatedWithProject pId
+    isAuthorized (IssueR pId _) _ = isAuthenticatedWithProject pId
+    isAuthorized (IssueCommentsR pId _) _ = isAuthenticatedWithProject pId
+    isAuthorized (NewIssueCommentR pId _) _ = isAuthenticatedWithProject pId
+    isAuthorized (IssueCommentR pId _ _) _ = isAuthenticatedWithProject pId
+    -- Routes that are authenticated without project access
+    isAuthorized NewProjectR _ = isAuthenticated
+    isAuthorized ProjectsR _ = isAuthenticated
+    isAuthorized (UserR _) _ = isAuthenticated
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -142,14 +149,6 @@ instance Yesod App where
     makeLogger :: App -> IO Logger
     makeLogger = return . appLogger
 
--- How to run database actions.
-instance YesodPersist App where
-    type YesodPersistBackend App = SqlBackend
-    runDB :: SqlPersistT Handler a -> Handler a
-    runDB action = do
-        master <- getYesod
-        runSqlPool action $ appConnPool master
-
 instance YesodPersistRunner App where
     getDBRunner :: Handler (DBRunner App, Handler ())
     getDBRunner = defaultGetDBRunner appConnPool
@@ -159,6 +158,18 @@ canCreateUser = cachedEitherUserId >>= (return . either (Unauthorized . pack) (c
 
 isAuthenticated :: Handler AuthResult
 isAuthenticated = cachedEitherUser >>= (return . either (Unauthorized . pack) (const Authorized))
+
+isAuthenticatedWithProject :: ProjectId -> Handler AuthResult
+isAuthenticatedWithProject pId = do
+    baseAuthResult <- isAuthenticated
+    case baseAuthResult of
+        Unauthorized e -> return $ Unauthorized e
+        AuthenticationRequired -> return $ Unauthorized "You have to authenticate first."
+        Authorized -> do
+            canAccessProject <- canCurrentUserAccessProject pId
+            return $ if canAccessProject
+                then Authorized
+                else Unauthorized "You are not a contributor of the project."
 
 currentUserId :: Handler UserId
 currentUserId = cachedEitherUserId >>= (return . either (const $ error "User is not authorized.") id)
@@ -196,6 +207,14 @@ getEitherUserId = do
         Just token -> do
             result <- liftIO $ verifyUserToken appSettings $ fromStrict $ drop (length "Bearer ") token
             return $ bimap createErrorMessage (UserKey . pack) result
+
+canCurrentUserAccessProject :: ProjectId -> Handler Bool
+canCurrentUserAccessProject pId = do
+    eProject <- runDB $ runExceptT $ getProject pId
+    userId <- currentUserId
+    return $ case eProject of
+        Left _ -> False
+        Right project -> userId `elem` projectContributorIds (entityVal project)
 
 -- Useful when writing code that is re-usable outside of the Handler context.
 -- An example is background jobs that send email.

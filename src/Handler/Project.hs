@@ -32,3 +32,9 @@ patchArchiveProjectR pId = archiveProject pId >>= createResponse
 
 patchUnarchiveProjectR :: ProjectId -> Handler Value
 patchUnarchiveProjectR pId = unarchiveProject pId >>= createResponse
+
+postProjectContributorR :: ProjectId -> UserId -> Handler Value
+postProjectContributorR pId userId = addContributor pId userId >>= createResponse
+
+deleteProjectContributorR :: ProjectId -> UserId -> Handler Value
+deleteProjectContributorR pId userId = removeContributor pId userId >>= createResponse

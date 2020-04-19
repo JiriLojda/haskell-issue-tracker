@@ -13,6 +13,7 @@
 /api/project/#ProjectId/rename RenameProjectR PATCH
 /api/project/#ProjectId/archive ArchiveProjectR PATCH
 /api/project/#ProjectId/unarchive UnarchiveProjectR PATCH
+/api/project/#ProjectId/contributor/#UserId ProjectContributorR POST DELETE
 /api/projects ProjectsR GET
 
 -- issue
