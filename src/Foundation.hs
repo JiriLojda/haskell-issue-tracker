@@ -95,22 +95,27 @@ instance Yesod App where
     -- Signup has to have a valid token, but no user is in a database yet
     isAuthorized SignupR _ = canCreateUser
     -- Routes that are authenticated with project access
-    isAuthorized (ProjectR pId) _ = isAuthenticatedWithProject pId
+    isAuthorized (ProjectR pId) True = isAuthenticatedWithProject pId
+    isAuthorized (ProjectR pId) False = return Authorized
     isAuthorized (UnarchiveProjectR pId) _ = isAuthenticatedWithProject pId
     isAuthorized (ArchiveProjectR pId) _ = isAuthenticatedWithProject pId
     isAuthorized (RenameProjectR pId) _ = isAuthenticatedWithProject pId
-    isAuthorized (IssuesR pId) _ = isAuthenticatedWithProject pId
+    isAuthorized (IssuesR pId) True = isAuthenticatedWithProject pId
+    isAuthorized (IssuesR pId) False = return Authorized
     isAuthorized (NewIssueR pId) _ = isAuthenticatedWithProject pId
     isAuthorized (AllWorkflowR pId) _ = isAuthenticatedWithProject pId
     isAuthorized (WorkflowR pId _) _ = isAuthenticatedWithProject pId
     isAuthorized (ProjectContributorR pId _) _ = isAuthenticatedWithProject pId
-    isAuthorized (IssueR pId _) _ = isAuthenticatedWithProject pId
-    isAuthorized (IssueCommentsR pId _) _ = isAuthenticatedWithProject pId
+    isAuthorized (IssueR pId _) True = isAuthenticatedWithProject pId
+    isAuthorized (IssueR pId _) False = return Authorized
+    isAuthorized (IssueCommentsR pId _) True = isAuthenticatedWithProject pId
+    isAuthorized (IssueCommentsR pId _) False = return Authorized
     isAuthorized (NewIssueCommentR pId _) _ = isAuthenticatedWithProject pId
-    isAuthorized (IssueCommentR pId _ _) _ = isAuthenticatedWithProject pId
+    isAuthorized (IssueCommentR pId _ _) True = isAuthenticatedWithProject pId
+    isAuthorized (IssueCommentR pId _ _) False = return Authorized
     -- Routes that are authenticated without project access
     isAuthorized NewProjectR _ = isAuthenticated
-    isAuthorized ProjectsR _ = isAuthenticated
+    isAuthorized ProjectsR _ = return Authorized
     isAuthorized (UserR _) _ = isAuthenticated
 
     -- This function creates static content files in the static folder
